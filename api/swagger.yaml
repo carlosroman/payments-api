@@ -1,0 +1,78 @@
+swagger: "2.0"
+
+info:
+  description: "This is a simple payments API"
+  version: "1.0.0"
+  title: "Swagger Petstore"
+  contact:
+    email: "carlosr@cliche-corp.co.uk"
+  license:
+    name: "MIT"
+    url: "https://github.com/carlosroman/payments-api/LICENSE.md"
+
+host: "localhost"
+basePath: "/v1"
+
+tags:
+- name: "payment"
+  description: "Everything about your payments"
+  externalDocs:
+    description: "Find out more"
+    url: "https://github.com/carlosroman/payments-api/README.md"
+
+schemes:
+- "https"
+- "http"
+
+paths:
+  /payment:
+    post:
+      tags:
+      - "payment"
+      summary: "Add a new payment"
+      description: ""
+      operationId: "addPayment"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Payment object that needs to be added be recorded"
+        required: true
+        schema:
+          $ref: "#/definitions/Payment"
+      responses:
+        405:
+          description: "Invalid input"
+
+definitions:
+  Payment:
+    type: "object"
+    properties:
+      type:
+        type: "string"
+        description: "Order Status"
+        enum:
+        - "payment"
+      id:
+        type: "string"
+      version:
+        type: "integer"
+        format: "int32"
+      organisation_id:
+        type: "string"
+      attributes:
+        type: "object"
+        properties:
+          amount:
+            type: "string"
+      end_to_end_reference:
+        type: "string"
+      numeric_reference:
+        type: "string"
+      payment_id:
+        type: "string"
+      reference:
+        type: "string"
