@@ -1,10 +1,12 @@
 package payment
 
+import "database/sql"
+
 type Service interface {
 	Save(payment Payment) (id string, err error)
 }
 
-func NewService() Service {
+func NewService(db *sql.DB) Service {
 	return &service{}
 }
 
