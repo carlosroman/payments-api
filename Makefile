@@ -1,8 +1,8 @@
 .DEFAULT_GOAL := test
 
-.PHONY: build test clean docker-build start stop
+.PHONY: build test clean docker-build start stop restart dc-build
 
-NS ?= payments-api
+NS ?= carlosroman/payments-api
 VERSION ?= latest
 
 DOCKER ?= docker
@@ -37,7 +37,7 @@ build:
 	@go build \
 	    -a \
 	    -installsuffix cgo \
-	    -o ./target/$(NS) \
+	    -o ./target/server \
 	    ./cmd/server/server.go
 
 docker-build:
@@ -50,3 +50,8 @@ start:
 
 stop:
 	@$(DOCKER_COMPOSE_CMD) down
+
+restart: stop start;
+
+dc-build:
+	@$(DOCKER_COMPOSE_CMD) build

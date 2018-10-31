@@ -11,14 +11,19 @@ RUN apk --no-cache --upgrade add ca-certificates \
     musl-dev \
     && chmod +X /bin/wait-for
 
-COPY . /src/payments
+COPY . /usr/local/src/payments
 
-WORKDIR /src/payments
+WORKDIR /usr/local/src/payments
 
 RUN make build
 
 FROM alpine:3.8
 WORKDIR /
-COPY --from=0 /src/payments/target/* /bin/
+
+COPY --from=0 /usr/local/src/payments/target/* /usr/local/payments/
+COPY --from=0 /usr/local/src/payments/api/* /usr/local/payments/static/
 COPY --from=0 /bin/wait-for /bin/wait-for
-ENTRYPOINT ["/bin/payments-api"]
+
+WORKDIR /usr/local/payments/
+
+ENTRYPOINT ["/usr/local/payments/server"]

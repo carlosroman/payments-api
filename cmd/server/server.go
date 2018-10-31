@@ -37,7 +37,7 @@ func main() {
 					Name:   "port, p",
 					Value:  8080,
 					Usage:  "Set the port of the server",
-					EnvVar: "PORT",
+					EnvVar: "SERVER_PORT",
 				},
 				cli.StringFlag{
 					Name:   "db-user",
@@ -78,10 +78,19 @@ func main() {
 					return cli.NewExitError(err, 1)
 				}
 
+				dir, err := os.Getwd()
+				if err != nil {
+					log.Fatal(err)
+				}
+				log.Infof("current dir: %s", dir)
+
 				s := payment.NewService(db)
 				h := payment.GetHandlers(s)
+
+				h.PathPrefix("/static/").Handler(corsHandler(http.StripPrefix("/static/", http.FileServer(http.Dir("static")))))
+				addr := fmt.Sprintf("0.0.0.0:%v", c.Int("port"))
 				srv := &http.Server{
-					Addr: fmt.Sprintf("0.0.0.0:%v", c.Int("port, p")),
+					Addr: addr,
 					// Good practice to set timeouts to avoid Slowloris attacks.
 					WriteTimeout: time.Second * 15,
 					ReadTimeout:  time.Second * 15,
@@ -89,6 +98,7 @@ func main() {
 					Handler:      h, // Pass our instance of gorilla/mux in.
 				}
 
+				log.Infof("Starting server at %s", addr)
 				if err := srv.ListenAndServe(); err != nil {
 					return cli.NewExitError(err, 1)
 				}
@@ -101,6 +111,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+func corsHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		h.ServeHTTP(w, r)
+	})
 }
 
 func initDb(dbHost string, dbPort int, dbUser string, dbPassword string, dbName string) (db *sql.DB, err error) {
