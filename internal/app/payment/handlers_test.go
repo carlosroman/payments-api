@@ -10,8 +10,10 @@ import (
 	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -101,7 +103,78 @@ var _ = Describe("Handlers", func() {
 			})
 		})
 	})
+
+	Describe("Getting a payment", func() {
+
+		Context("that exists in the db", func() {
+			It("should return the payment", func() {
+
+				id, req := givenPaymentRequest(ts.URL)
+
+				expected := payment.Payment{Id: id, Reference: "some ref"}
+				ms.On("Get", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("string")).
+					Return(expected, nil)
+
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer resp.Body.Close()
+
+				body, err := ioutil.ReadAll(resp.Body)
+				Expect(err).ShouldNot(HaveOccurred())
+				var actual payment.Payment
+				err = json.Unmarshal(body, &actual)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(actual).Should(Equal(expected))
+				ms.AssertCalled(GinkgoT(), "Get", mock.AnythingOfType("*context.valueCtx"), id)
+			})
+
+			It("should return 200 status", func() {
+
+				id, req := givenPaymentRequest(ts.URL)
+
+				expected := payment.Payment{Id: id, Reference: "some ref"}
+				ms.On("Get", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("string")).
+					Return(expected, nil)
+
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer resp.Body.Close()
+				Expect(resp.StatusCode).Should(Equal(200))
+			})
+		})
+
+		Context("that does not exists in the db", func() {
+			It("should return not found", func() {
+				_, req := givenPaymentRequest(ts.URL)
+				ms.On("Get", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("string")).
+					Return(payment.Payment{}, payment.ErrNotFound)
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer resp.Body.Close()
+				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		Context("when the database errors", func() {
+			It("should return internal server error", func() {
+				_, req := givenPaymentRequest(ts.URL)
+				ms.On("Get", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("string")).
+					Return(payment.Payment{}, errors.New("some DB error"))
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer resp.Body.Close()
+				Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+		})
+	})
 })
+
+func givenPaymentRequest(url string) (id string, req *http.Request) {
+	id = uuid.NewV4().String()
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/payment/%s", url, id), nil)
+	Expect(err).ShouldNot(HaveOccurred())
+	return id, req
+}
 
 func givenValidPaymentRequest(url string) *http.Request {
 	p := payment.Payment{}
@@ -121,4 +194,9 @@ type mockService struct {
 func (s *mockService) Save(ctx context.Context, payment payment.Payment) (id string, err error) {
 	args := s.Called(ctx, payment)
 	return args.String(0), args.Error(1)
+}
+
+func (s *mockService) Get(ctx context.Context, id string) (p payment.Payment, err error) {
+	args := s.Called(ctx, id)
+	return args.Get(0).(payment.Payment), args.Error(1)
 }

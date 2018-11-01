@@ -2,6 +2,7 @@ package payment_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"github.com/carlosroman/payments-api/internal/app/payment"
 	. "github.com/onsi/ginkgo"
@@ -52,6 +53,45 @@ var _ = Describe("Service", func() {
 				_, err = s.Save(ctx, p)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(dbMock.ExpectationsWereMet()).ShouldNot(HaveOccurred())
+			})
+		})
+	})
+
+	Describe("Getting a payment", func() {
+		Context("when successful", func() {
+			It("should return payment from DB", func() {
+				p := payment.Payment{Reference: "some ref", Id: "awesome id"}
+				bs, err := json.Marshal(p)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				rows := sqlmock.NewRows([]string{"info"}).AddRow(string(bs))
+				dbMock.ExpectQuery("SELECT info FROM payments WHERE ID = ?").
+					WithArgs(p.Id).
+					WillReturnRows(rows)
+
+				actual, err := s.Get(ctx, p.Id)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(actual).To(Equal(p))
+			})
+		})
+		Context("when not successful", func() {
+			It("should return not found if no record", func() {
+
+				dbMock.ExpectQuery("SELECT info FROM payments WHERE ID = ?").
+					WithArgs("some id").
+					WillReturnError(sql.ErrNoRows)
+				_, err := s.Get(ctx, "some id")
+				Expect(err).Should(HaveOccurred())
+				Expect(err).To(Equal(payment.ErrNotFound))
+			})
+			It("should return all other errors", func() {
+
+				dbMock.ExpectQuery("SELECT info FROM payments WHERE ID = ?").
+					WithArgs("some id").
+					WillReturnError(sql.ErrConnDone)
+				_, err := s.Get(ctx, "some id")
+				Expect(err).Should(HaveOccurred())
+				Expect(err).To(Equal(sql.ErrConnDone))
 			})
 		})
 	})
