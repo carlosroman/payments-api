@@ -63,7 +63,7 @@ var _ = Describe("Handlers", func() {
 				resp, err := http.DefaultClient.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
 				defer resp.Body.Close()
-				Expect(resp.Header.Get("Location")).To(Equal("/new-payment-id"))
+				Expect(resp.Header.Get("Location")).To(Equal("/payment/new-payment-id"))
 				ms.AssertExpectations(GinkgoT())
 			})
 

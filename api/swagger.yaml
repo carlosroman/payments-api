@@ -10,7 +10,7 @@ info:
     name: "MIT"
     url: "https://github.com/carlosroman/payments-api/LICENSE.md"
 
-host: "localhost"
+host: "localhost:8080"
 basePath: "/"
 
 tags:
@@ -21,7 +21,6 @@ tags:
     url: "https://github.com/carlosroman/payments-api/README.md"
 
 schemes:
-- "https"
 - "http"
 
 paths:
@@ -44,6 +43,13 @@ paths:
         schema:
           $ref: "#/definitions/Payment"
       responses:
+        201:
+          description: "Payment saved"
+          headers:
+            Location:
+              type: string
+              format: url
+              description: Location of the payment
         405:
           description: "Invalid input"
   /payment/{paymentId}:

@@ -62,7 +62,7 @@ func (h *handlers) savePaymentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Location", fmt.Sprintf("/%s", id))
+	w.Header().Set("Location", fmt.Sprintf("/payment/%s", id))
 	w.WriteHeader(http.StatusCreated)
 	return
 }
