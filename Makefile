@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := test
 
-.PHONY: build test clean docker-build start stop restart dc-build
+.PHONY: build test clean docker-build start stop restart dc-build fmt
 
 NS ?= carlosroman/payments-api
 VERSION ?= latest
@@ -21,7 +21,7 @@ test: test-clean
         --randomizeSuites \
         --failOnPending \
         --cover \
-        --coverprofile=$(NS).coverprofile \
+        --coverprofile=payments.coverprofile \
         --outputdir=target \
         --trace \
         --race \
@@ -29,7 +29,7 @@ test: test-clean
         ./...
 
 clean:
-	rm -rf target
+	@rm -rf target
 
 build: export CGO_ENABLED=0
 build:
@@ -52,6 +52,9 @@ stop:
 	@$(DOCKER_COMPOSE_CMD) down
 
 restart: stop start;
+
+fmt:
+	@go fmt ./...
 
 dc-build:
 	@$(DOCKER_COMPOSE_CMD) build
