@@ -1,4 +1,4 @@
-FROM golang:1.11-alpine
+FROM golang:1.11-alpine AS golang
 
 COPY ./build/docker/wait-for /bin/
 
@@ -20,9 +20,9 @@ RUN make build
 FROM alpine:3.8
 WORKDIR /
 
-COPY --from=0 /usr/local/src/payments/target/* /usr/local/payments/
-COPY --from=0 /usr/local/src/payments/api/* /usr/local/payments/static/
-COPY --from=0 /bin/wait-for /bin/wait-for
+COPY --from=golang /usr/local/src/payments/target/* /usr/local/payments/
+COPY --from=golang /usr/local/src/payments/api/* /usr/local/payments/static/
+COPY --from=golang /bin/wait-for /bin/wait-for
 
 WORKDIR /usr/local/payments/
 
