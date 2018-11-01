@@ -10,4 +10,5 @@ require (
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.2.2
 	github.com/urfave/cli v1.20.0
+	gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0
 )
