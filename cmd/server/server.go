@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/carlosroman/payments-api/internal/app/payment"
+	"github.com/gorilla/handlers"
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -87,15 +88,18 @@ func main() {
 				s := payment.NewService(db)
 				h := payment.GetHandlers(s)
 
-				h.PathPrefix("/static/").Handler(corsHandler(http.StripPrefix("/static/", http.FileServer(http.Dir("static")))))
+				h.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 				addr := fmt.Sprintf("0.0.0.0:%v", c.Int("port"))
+				headersOk := handlers.AllowedHeaders([]string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"})
+				originsOk := handlers.AllowedOrigins([]string{"*"})
+				methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 				srv := &http.Server{
 					Addr: addr,
 					// Good practice to set timeouts to avoid Slowloris attacks.
 					WriteTimeout: time.Second * 15,
 					ReadTimeout:  time.Second * 15,
 					IdleTimeout:  time.Second * 60,
-					Handler:      h, // Pass our instance of gorilla/mux in.
+					Handler:      handlers.CORS(headersOk, originsOk, methodsOk)(h), // Pass our instance of gorilla/mux in.
 				}
 
 				log.Infof("Starting server at %s", addr)
@@ -112,14 +116,15 @@ func main() {
 		log.Fatal(err)
 	}
 }
-func corsHandler(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		h.ServeHTTP(w, r)
-	})
-}
+
+//func corsHandler(h http.Handler) http.Handler {
+//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//		w.Header().Set("Access-Control-Allow-Origin", "*")
+//		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+//		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+//		h.ServeHTTP(w, r)
+//	})
+//}
 
 func initDb(dbHost string, dbPort int, dbUser string, dbPassword string, dbName string) (db *sql.DB, err error) {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
