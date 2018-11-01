@@ -30,7 +30,7 @@ func (h *handlers) SavePaymentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.s.Save(p)
+	id, err := h.s.Save(r.Context(), p)
 	if err != nil {
 		log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)

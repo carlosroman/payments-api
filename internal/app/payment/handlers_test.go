@@ -2,6 +2,7 @@ package payment_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,7 +44,7 @@ var _ = Describe("Handlers", func() {
 			It("should return created", func() {
 				req := givenValidPaymentRequest(ts.URL)
 
-				ms.On("Save", mock.AnythingOfType("payment.Payment")).Return("new-payment-id", nil)
+				ms.On("Save", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("payment.Payment")).Return("new-payment-id", nil)
 
 				resp, err := http.DefaultClient.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -55,7 +56,7 @@ var _ = Describe("Handlers", func() {
 			It("should return location", func() {
 				req := givenValidPaymentRequest(ts.URL)
 
-				ms.On("Save", mock.AnythingOfType("payment.Payment")).Return("new-payment-id", nil)
+				ms.On("Save", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("payment.Payment")).Return("new-payment-id", nil)
 
 				resp, err := http.DefaultClient.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -67,12 +68,12 @@ var _ = Describe("Handlers", func() {
 			It("should call save correctly", func() {
 				req := givenValidPaymentRequest(ts.URL)
 
-				ms.On("Save", mock.AnythingOfType("payment.Payment")).Return("new-payment-id", nil)
+				ms.On("Save", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("payment.Payment")).Return("new-payment-id", nil)
 
 				resp, err := http.DefaultClient.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
 				defer resp.Body.Close()
-				ms.AssertCalled(GinkgoT(), "Save", payment.Payment{})
+				ms.AssertCalled(GinkgoT(), "Save", mock.AnythingOfType("*context.valueCtx"), payment.Payment{})
 			})
 		})
 
@@ -92,7 +93,7 @@ var _ = Describe("Handlers", func() {
 			It("should return internal server error", func() {
 				req := givenValidPaymentRequest(ts.URL)
 
-				ms.On("Save", mock.AnythingOfType("payment.Payment")).Return("", errors.New("something went wrong"))
+				ms.On("Save", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("payment.Payment")).Return("", errors.New("something went wrong"))
 				resp, err := http.DefaultClient.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
 				defer resp.Body.Close()
@@ -117,7 +118,7 @@ type mockService struct {
 	mock.Mock
 }
 
-func (s *mockService) Save(payment payment.Payment) (id string, err error) {
-	args := s.Called(payment)
+func (s *mockService) Save(ctx context.Context, payment payment.Payment) (id string, err error) {
+	args := s.Called(ctx, payment)
 	return args.String(0), args.Error(1)
 }

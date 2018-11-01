@@ -523,5 +523,5 @@ ASALocalRun/
 # Project ignores
 #
 target/
-.coverprofile
+*.coverprofile
 
