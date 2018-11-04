@@ -26,9 +26,9 @@ jobs:
       - run:
           name: Run tests
           command: make test
-      - run:
-          name: Download goveralls
-          command: go get -v github.com/mattn/goveralls
-      - run:
-          name: Upload Coverage
-          command: make coveralls
+#      - run:
+#          name: Download goveralls
+#          command: go get -v github.com/mattn/goveralls
+#      - run:
+#          name: Upload Coverage
+#          command: make coveralls

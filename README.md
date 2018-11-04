@@ -45,11 +45,18 @@ The easiest way to run the tests is by running:
 $ make test
 ```
 
+the other option is running
+```
+$ make test-ginkgo
+```
+
 This uses [Ginkgo](https://onsi.github.io/ginkgo/) so you may need to install it by running:
 
 ```
 go get github.com/onsi/ginkgo/ginkgo
 ```
+
+Currently this has issues on some Linux environments
 
 ## Running the application
 

@@ -15,6 +15,12 @@ test-clean: clean
 	@mkdir -p target
 
 test: test-clean
+	@go test \
+	    -v \
+	    -race \
+	    ./...
+
+test-ginkgo: test-clean
 	@ginkgo \
         -r \
         -skipPackage vendor \
