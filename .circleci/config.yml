@@ -15,7 +15,6 @@ jobs:
       
     environment:
       GOLANGCI_LINT_VERSION: 1.9.1
-    working_directory: /usr/local/src/payments
     steps:
       - checkout
       - run:
