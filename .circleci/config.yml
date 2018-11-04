@@ -1,0 +1,32 @@
+# Golang CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-go/ for more details
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version
+      - image: circleci/golang:1.11
+      
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/postgres:9.4
+      
+    environment:
+      GOLANGCI_LINT_VERSION: 1.9.1
+    working_directory: /usr/local/src/payments
+    steps:
+      - checkout
+      - run:
+          name: Setup for test
+          command: go get -v github.com/onsi/ginkgo/ginkgo
+      - run:
+          name: Run tests
+          command: make test
+      - run:
+          name: Download goveralls
+          command: go get -v github.com/mattn/goveralls
+      - run:
+          name: Upload Coverage
+          command: make coveralls
