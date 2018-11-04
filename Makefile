@@ -17,6 +17,7 @@ test-clean: clean
 test: test-clean
 	@ginkgo \
         -r \
+        -skipPackage vendor \
         --randomizeAllSpecs \
         --randomizeSuites \
         --failOnPending \
