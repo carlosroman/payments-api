@@ -20,6 +20,10 @@ func GetHandlers(s Service) *mux.Router {
 
 	r.HandleFunc("/payment/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", h.getPaymentHandler).
 		Methods("GET")
+
+	r.HandleFunc("/__health", h.healthCheckHandler).
+		Methods("GET")
+
 	return r
 }
 
@@ -90,4 +94,19 @@ func (h *handlers) savePaymentHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", fmt.Sprintf("/payment/%s", id))
 	w.WriteHeader(http.StatusCreated)
 	return
+}
+
+func (h *handlers) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	hc := h.s.HealthCheck(r.Context())
+
+	if !hc.Healthy {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
+
+	if err := json.NewEncoder(w).Encode(hc); err != nil {
+		log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }

@@ -8,10 +8,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type HealthCheckStatus struct {
+	Message string `json:"message"`
+	Healthy bool   `json:"healthy"`
+}
+
 type Service interface {
 	Save(ctx context.Context, payment Payment) (id string, err error)
 	Get(ctx context.Context, paymentId string) (payment Payment, err error)
 	SearchByOrganisationId(ctx context.Context, organisationId string) (payments []Payment, err error)
+	HealthCheck(ctx context.Context) HealthCheckStatus
 }
 
 var ErrNotFound = errors.New("payment: not found")
@@ -19,6 +25,7 @@ var ErrNotFound = errors.New("payment: not found")
 type Database interface {
 	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
 	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	PingContext(ctx context.Context) error
 }
 
 func NewService(db Database) Service {
@@ -89,4 +96,18 @@ func (s *service) SearchByOrganisationId(ctx context.Context, organisationId str
 	}
 
 	return payments, err
+}
+
+func (s *service) HealthCheck(ctx context.Context) HealthCheckStatus {
+	if err := s.db.PingContext(ctx); err != nil {
+		return HealthCheckStatus{
+			Message: err.Error(),
+			Healthy: false,
+		}
+	}
+
+	return HealthCheckStatus{
+		Message: "okay",
+		Healthy: true,
+	}
 }

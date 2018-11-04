@@ -7,6 +7,7 @@ import (
 	"github.com/carlosroman/payments-api/internal/app/payment"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -144,4 +145,61 @@ var _ = Describe("Service", func() {
 			})
 		})
 	})
+
+	Describe("when HealthCheck called", func() {
+		var mockDb mockDatabase
+		BeforeEach(func() {
+			mockDb = mockDatabase{}
+			s = payment.NewService(&mockDb)
+		})
+
+		Context("when healthy", func() {
+			It("should return healthy status", func() {
+				mockDb.On("PingContext", mock.Anything).
+					Return(nil)
+
+				actual := s.HealthCheck(ctx)
+				expected := payment.HealthCheckStatus{
+					Healthy: true,
+					Message: "okay",
+				}
+				Expect(actual).Should(Equal(expected))
+				mockDb.AssertCalled(GinkgoT(), "PingContext", ctx)
+			})
+		})
+
+		Context("when unhealthy", func() {
+			It("should return unhealthy status", func() {
+				mockDb.On("PingContext", mock.Anything).
+					Return(sql.ErrConnDone)
+
+				actual := s.HealthCheck(ctx)
+				expected := payment.HealthCheckStatus{
+					Healthy: false,
+					Message: "sql: connection is already closed",
+				}
+				Expect(actual).Should(Equal(expected))
+				mockDb.AssertCalled(GinkgoT(), "PingContext", ctx)
+			})
+		})
+	})
 })
+
+type mockDatabase struct {
+	mock.Mock
+}
+
+func (m *mockDatabase) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	arg := m.Called(ctx, query, args)
+	return arg.Get(0).(*sql.Row)
+}
+
+func (m *mockDatabase) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	arg := m.Called(ctx, query, args)
+	return arg.Get(0).(*sql.Rows), arg.Error(1)
+
+}
+func (m *mockDatabase) PingContext(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}

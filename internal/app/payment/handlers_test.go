@@ -204,6 +204,56 @@ var _ = Describe("Handlers", func() {
 				Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 			})
 		})
+
+		Context("when the health check called", func() {
+			It("should return internal server error if not healthy", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("%s/__health", ts.URL), nil)
+				Expect(err).ShouldNot(HaveOccurred())
+				ms.On("HealthCheck", mock.AnythingOfType("*context.valueCtx")).
+					Return(payment.HealthCheckStatus{
+						Healthy: false,
+						Message: "fail",
+					})
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer resp.Body.Close()
+				Expect(resp.StatusCode).To(Equal(http.StatusServiceUnavailable))
+			})
+
+			It("should return ok if healthy", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("%s/__health", ts.URL), nil)
+				Expect(err).ShouldNot(HaveOccurred())
+				ms.On("HealthCheck", mock.AnythingOfType("*context.valueCtx")).
+					Return(payment.HealthCheckStatus{
+						Healthy: true,
+						Message: "okay",
+					})
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer resp.Body.Close()
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			})
+
+			It("should message back", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("%s/__health", ts.URL), nil)
+				Expect(err).ShouldNot(HaveOccurred())
+				expected := payment.HealthCheckStatus{
+					Healthy: true,
+					Message: "okay",
+				}
+				ms.On("HealthCheck", mock.AnythingOfType("*context.valueCtx")).
+					Return(expected)
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				Expect(err).ShouldNot(HaveOccurred())
+				var actual payment.HealthCheckStatus
+				err = json.Unmarshal(body, &actual)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(actual).Should(Equal(expected))
+			})
+		})
 	})
 })
 
@@ -248,4 +298,9 @@ func (s *mockService) Get(ctx context.Context, id string) (p payment.Payment, er
 func (s *mockService) SearchByOrganisationId(ctx context.Context, organisationId string) (payments []payment.Payment, err error) {
 	args := s.Called(ctx, organisationId)
 	return args.Get(0).([]payment.Payment), args.Error(1)
+}
+
+func (s *mockService) HealthCheck(ctx context.Context) payment.HealthCheckStatus {
+	args := s.Called(ctx)
+	return args.Get(0).(payment.HealthCheckStatus)
 }
