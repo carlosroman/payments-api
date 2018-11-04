@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := test
 
-.PHONY: build test clean docker-build start stop restart dc-build fmt
+.PHONY: build test clean docker-build start stop restart dc-build fmt info
 
 NS ?= carlosroman/payments-api
 VERSION ?= latest
@@ -58,3 +58,6 @@ fmt:
 
 dc-build:
 	@$(DOCKER_COMPOSE_CMD) build
+
+info:
+	@go env

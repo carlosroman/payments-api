@@ -18,6 +18,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Get info about build
+          command: make info
+      - run:
           name: Setup for test
           command: go get -v github.com/onsi/ginkgo/ginkgo
       - run:
