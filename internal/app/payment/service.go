@@ -75,6 +75,7 @@ func (s *service) SearchByOrganisationId(ctx context.Context, organisationId str
 		return payments, err
 	}
 
+	payments = make([]Payment, 0)
 	for rows.Next() {
 		var payment Payment
 		var info string

@@ -121,6 +121,27 @@ var _ = Describe("Service", func() {
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(actual).To(Equal(ps))
 			})
+
+			It("should return empty slice", func() {
+				rows := sqlmock.NewRows([]string{"info"})
+				dbMock.ExpectQuery("SELECT info FROM payments WHERE info ->> 'organisation_id' = ?").
+					WithArgs("OrgId").
+					WillReturnRows(rows)
+				actual, err := s.SearchByOrganisationId(ctx, "OrgId")
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(actual).ShouldNot(BeNil())
+			})
+		})
+
+		Context("when not successful", func() {
+			It("should return db error back", func() {
+				dbMock.ExpectQuery("SELECT info FROM payments WHERE info ->> 'organisation_id' = ?").
+					WithArgs("OrgId").
+					WillReturnError(sql.ErrConnDone)
+				_, err := s.SearchByOrganisationId(ctx, "OrgId")
+				Expect(err).Should(HaveOccurred())
+				Expect(err).To(Equal(sql.ErrConnDone))
+			})
 		})
 	})
 })
