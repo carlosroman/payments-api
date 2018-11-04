@@ -11,8 +11,15 @@ import (
 func GetHandlers(s Service) *mux.Router {
 	h := handlers{s: s}
 	r := mux.NewRouter()
-	r.HandleFunc("/payment", h.savePaymentHandler).Methods("POST")
-	r.HandleFunc("/payment/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", h.getPaymentHandler).Methods("GET")
+
+	r.HandleFunc("/payment", h.savePaymentHandler).
+		Methods("POST")
+
+	r.HandleFunc("/payment/search", h.searchForPayments).
+		Methods("GET")
+
+	r.HandleFunc("/payment/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", h.getPaymentHandler).
+		Methods("GET")
 	return r
 }
 
@@ -38,6 +45,24 @@ func (h *handlers) getPaymentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(p); err != nil {
+		log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *handlers) searchForPayments(w http.ResponseWriter, r *http.Request) {
+	vars := r.URL.Query()
+	id := vars["organisation_id"]
+	w.Header().Set("Content-Type", "application/json")
+	ps, err := h.s.SearchByOrganisationId(r.Context(), id[0])
+	if err != nil {
+		log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(Payments{Payments: ps}); err != nil {
 		log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return

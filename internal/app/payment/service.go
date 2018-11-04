@@ -11,12 +11,14 @@ import (
 type Service interface {
 	Save(ctx context.Context, payment Payment) (id string, err error)
 	Get(ctx context.Context, paymentId string) (payment Payment, err error)
+	SearchByOrganisationId(ctx context.Context, organisationId string) (payments []Payment, err error)
 }
 
 var ErrNotFound = errors.New("payment: not found")
 
 type Database interface {
 	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 }
 
 func NewService(db Database) Service {
@@ -61,4 +63,29 @@ func (s *service) Get(ctx context.Context, paymentId string) (payment Payment, e
 	}
 	err = json.Unmarshal([]byte(info), &payment)
 	return payment, err
+}
+
+func (s *service) SearchByOrganisationId(ctx context.Context, organisationId string) (payments []Payment, err error) {
+
+	rows, err := s.db.QueryContext(ctx,
+		"SELECT info FROM payments WHERE info ->> 'organisation_id' = $1;",
+		organisationId)
+
+	if err != nil {
+		return payments, err
+	}
+
+	for rows.Next() {
+		var payment Payment
+		var info string
+		if err = rows.Scan(&info); err != nil {
+			return payments, err
+		}
+		if err = json.Unmarshal([]byte(info), &payment); err != nil {
+			return payments, err
+		}
+		payments = append(payments, payment)
+	}
+
+	return payments, err
 }

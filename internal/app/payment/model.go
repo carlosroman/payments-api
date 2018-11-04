@@ -14,3 +14,7 @@ type Payment struct {
 type Attributes struct {
 	Amount string `json:"amount"`
 }
+
+type Payments struct {
+	Payments []Payment `json:"data"`
+}

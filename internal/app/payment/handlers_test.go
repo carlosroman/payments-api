@@ -104,6 +104,44 @@ var _ = Describe("Handlers", func() {
 		})
 	})
 
+	Describe("Searching for payments", func() {
+
+		Context("that exist in the db", func() {
+			It("organise id should return payments", func() {
+
+				id := uuid.NewV4().String()
+				req := givenPaymentSearchRequest(ts.URL)
+				q := req.URL.Query()
+				q.Add("organisation_id", id)
+				req.URL.RawQuery = q.Encode()
+
+				expected := payment.Payments{
+					Payments: []payment.Payment{
+						{Id: "A", OrganisationId: id},
+						{Id: "B", OrganisationId: id},
+						{Id: "C", OrganisationId: id},
+					},
+				}
+				ms.On("SearchByOrganisationId", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("string")).
+					Return(expected.Payments, nil)
+
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer resp.Body.Close()
+
+				Expect(resp.StatusCode).Should(Equal(200))
+
+				body, err := ioutil.ReadAll(resp.Body)
+				Expect(err).ShouldNot(HaveOccurred())
+				var actual payment.Payments
+				err = json.Unmarshal(body, &actual)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(actual).Should(Equal(expected))
+				ms.AssertCalled(GinkgoT(), "SearchByOrganisationId", mock.AnythingOfType("*context.valueCtx"), id)
+			})
+		})
+	})
+
 	Describe("Getting a payment", func() {
 
 		Context("that exists in the db", func() {
@@ -169,6 +207,12 @@ var _ = Describe("Handlers", func() {
 	})
 })
 
+func givenPaymentSearchRequest(url string) (req *http.Request) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/payment/search", url), nil)
+	Expect(err).ShouldNot(HaveOccurred())
+	return req
+}
+
 func givenPaymentRequest(url string) (id string, req *http.Request) {
 	id = uuid.NewV4().String()
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/payment/%s", url, id), nil)
@@ -199,4 +243,9 @@ func (s *mockService) Save(ctx context.Context, payment payment.Payment) (id str
 func (s *mockService) Get(ctx context.Context, id string) (p payment.Payment, err error) {
 	args := s.Called(ctx, id)
 	return args.Get(0).(payment.Payment), args.Error(1)
+}
+
+func (s *mockService) SearchByOrganisationId(ctx context.Context, organisationId string) (payments []payment.Payment, err error) {
+	args := s.Called(ctx, organisationId)
+	return args.Get(0).([]payment.Payment), args.Error(1)
 }

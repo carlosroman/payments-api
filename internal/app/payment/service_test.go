@@ -95,4 +95,32 @@ var _ = Describe("Service", func() {
 			})
 		})
 	})
+
+	Describe("Search By Organisation Id", func() {
+		Context("when successful", func() {
+			It("should return all payments for given Organisation Id", func() {
+				ps := []payment.Payment{
+					{Id: "A", OrganisationId: "OrgId"},
+					{Id: "B", OrganisationId: "OrgId"},
+					{Id: "C", OrganisationId: "OrgId"},
+				}
+
+				rows := sqlmock.NewRows([]string{"info"})
+
+				for _, p := range ps {
+					bs, err := json.Marshal(p)
+					Expect(err).ShouldNot(HaveOccurred())
+					rows.AddRow(string(bs))
+				}
+
+				dbMock.ExpectQuery("SELECT info FROM payments WHERE info ->> 'organisation_id' = ?").
+					WithArgs("OrgId").
+					WillReturnRows(rows)
+
+				actual, err := s.SearchByOrganisationId(ctx, "OrgId")
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(actual).To(Equal(ps))
+			})
+		})
+	})
 })
