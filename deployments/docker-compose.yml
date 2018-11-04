@@ -8,6 +8,7 @@ services:
       dockerfile: ./build/docker/Dockerfile
     ports:
       - 8080:8080
+    restart: always
     environment:
       SERVER_PORT: 8080
       DB_USER: admin
@@ -18,10 +19,14 @@ services:
     entrypoint: ["/bin/wait-for", "postgres.test:5432", "--", "/usr/local/payments/server", "run"]
     depends_on:
       - postgres.test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__health"]
+      interval: 60s
+      timeout: 3s
+      retries: 5
 
   postgres.test:
     image: postgres:11
-    restart: always
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: changeme
