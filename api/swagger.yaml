@@ -106,7 +106,7 @@ definitions:
       data:
         type: "array"
         items:
-          $ref: '#/components/Payment'
+          $ref: '#/definitions/Payment'
   Payment:
     type: "object"
     properties:
