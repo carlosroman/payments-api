@@ -149,7 +149,7 @@ var _ = Describe("Handlers", func() {
 
 				id, req := givenPaymentRequest(ts.URL)
 
-				expected := payment.Payment{Id: id, Reference: "some ref"}
+				expected := payment.Payment{Id: id, Attributes: payment.Attributes{Reference: "some ref"}}
 				ms.On("Get", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("string")).
 					Return(expected, nil)
 
@@ -170,7 +170,7 @@ var _ = Describe("Handlers", func() {
 
 				id, req := givenPaymentRequest(ts.URL)
 
-				expected := payment.Payment{Id: id, Reference: "some ref"}
+				expected := payment.Payment{Id: id, Attributes: payment.Attributes{Reference: "some ref"}}
 				ms.On("Get", mock.AnythingOfType("*context.valueCtx"), mock.AnythingOfType("string")).
 					Return(expected, nil)
 

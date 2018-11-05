@@ -15,13 +15,15 @@ var _ = Describe("Service", func() {
 
 	var (
 		s      payment.Service
+		db     *sql.DB
 		dbMock sqlmock.Sqlmock
 		ctx    context.Context
 	)
 
 	BeforeEach(func() {
-		db, mock, err := sqlmock.New()
+		d, mock, err := sqlmock.New()
 		Expect(err).ShouldNot(HaveOccurred())
+		db = d
 		s = payment.NewService(db)
 		dbMock = mock
 		ctx = context.Background()
@@ -30,28 +32,31 @@ var _ = Describe("Service", func() {
 	Describe("Saving a new payment", func() {
 		Context("when successful", func() {
 			It("should return id from DB", func() {
-
 				expectedId := "expectedId"
 				rows := sqlmock.NewRows([]string{"ID"}).AddRow(expectedId)
-				dbMock.ExpectQuery("INSERT INTO payments\\(info\\)").
-					WithArgs(sqlmock.AnyArg()).
+				dbMock.ExpectQuery("INSERT INTO payments\\(ID, info\\)").
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg()).
 					WillReturnRows(rows)
 
-				p := payment.Payment{Reference: "some ref"}
+				p := payment.Payment{Attributes: payment.Attributes{Reference: "some ref"}}
 				id, err := s.Save(ctx, p)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(id).Should(Equal(expectedId))
 			})
 
 			It("should save correct object", func() {
-				p := payment.Payment{Reference: "some ref"}
+				expectedId := "Some Id"
+				s = payment.NewServiceWithUuidGen(db, func() string {
+					return expectedId
+				})
+				p := payment.Payment{Attributes: payment.Attributes{Reference: "some ref"}, Id: expectedId}
 				bs, err := json.Marshal(p)
 				Expect(err).ShouldNot(HaveOccurred())
 				rows := sqlmock.NewRows([]string{"ID"}).AddRow("some id")
-				dbMock.ExpectQuery("INSERT INTO payments\\(info\\)").
-					WithArgs(string(bs)).
+				dbMock.ExpectQuery("INSERT INTO payments\\(ID, info\\)").
+					WithArgs(sqlmock.AnyArg(), string(bs)).
 					WillReturnRows(rows)
-				_, err = s.Save(ctx, p)
+				_, err = s.Save(ctx, payment.Payment{Attributes: payment.Attributes{Reference: "some ref"}})
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(dbMock.ExpectationsWereMet()).ShouldNot(HaveOccurred())
 			})
@@ -61,7 +66,7 @@ var _ = Describe("Service", func() {
 	Describe("Getting a payment", func() {
 		Context("when successful", func() {
 			It("should return payment from DB", func() {
-				p := payment.Payment{Reference: "some ref", Id: "awesome id"}
+				p := payment.Payment{Attributes: payment.Attributes{Reference: "some ref"}, Id: "awesome id"}
 				bs, err := json.Marshal(p)
 				Expect(err).ShouldNot(HaveOccurred())
 

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,24 +30,34 @@ type Database interface {
 }
 
 func NewService(db Database) Service {
+	return NewServiceWithUuidGen(db, func() string {
+		return uuid.NewV4().String()
+	})
+}
+
+func NewServiceWithUuidGen(db Database, newUuid func() string) Service {
 	return &service{
-		db: db,
+		db:      db,
+		newUuid: newUuid,
 	}
 }
 
 type service struct {
-	db Database
+	db      Database
+	newUuid func() string
 }
 
 func (s *service) Save(ctx context.Context, payment Payment) (id string, err error) {
+	id = s.newUuid()
+	payment.Id = id
 	bs, err := json.Marshal(payment)
 	if err != nil {
 		return id, err
 	}
 
 	err = s.db.QueryRowContext(ctx,
-		"INSERT INTO payments(info) VALUES($1) returning ID;",
-		string(bs)).Scan(&id)
+		"INSERT INTO payments(ID, info) VALUES($1, $2) returning ID;",
+		id, string(bs)).Scan(&id)
 	if err != nil {
 		return id, err
 	}
