@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := test
 
-.PHONY: build test clean docker-build start stop restart dc-build fmt info
+.PHONY: build test clean docker-build start stop restart dc-build fmt info aciidoc pdf
 
 NS ?= carlosroman/payments-api
 VERSION ?= latest
@@ -68,3 +68,21 @@ dc-build:
 
 info:
 	@go env
+
+pdf:
+	@$(DOCKER) run \
+	     --rm \
+	     -v $(CURDIR)/target:/documents \
+	     asciidoctor/docker-asciidoctor \
+	     asciidoctor-pdf \
+	     swagger.adoc
+
+asciidoc:
+	@$(DOCKER) run \
+	     --rm \
+	     -v $(CURDIR):/opt \
+	     swagger2markup/swagger2markup \
+	     convert \
+	     -i /opt/api/swagger.yaml \
+	     -f /opt/target/swagger
+

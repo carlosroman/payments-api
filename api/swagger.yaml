@@ -3,7 +3,7 @@ swagger: "2.0"
 info:
   description: "This is a simple payments API"
   version: "1.0.0"
-  title: "Swagger Petstore"
+  title: "Swagger Payments API"
   contact:
     email: "carlosr@cliche-corp.co.uk"
   license:
